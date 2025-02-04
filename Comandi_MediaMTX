@@ -1,0 +1,9 @@
+GENERAL WEBCAM
+./mediamtx
+./ffmpeg -f dshow -i video="GENERAL WEBCAM" -c:v libx264 -f rtsp rtsp://localhost:8554/mystream
+"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\VideoLAN\VLC media player.lnk" --network-caching=50 rtsp://localhost:8554/mystream
+
+TELLO
+./mediamtx
+./ffmpeg -i udp://192.168.10.1:11111 -c:v libx264 -f rtsp rtsp://localhost:8554/mystream
+"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\VideoLAN\VLC media player.lnk" --network-caching=50 rtsp://localhost:8554/mystream
