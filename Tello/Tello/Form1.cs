@@ -13,6 +13,8 @@ using tellocs;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 using System.Diagnostics;
 using System.IO;
+using LibVLCSharp.Shared;
+using LibVLCSharp.WinForms;
 
 
 namespace Tello
@@ -22,11 +24,15 @@ namespace Tello
 
         private tellocs.TelloCmd _tello;
 
+        private LibVLC _libVlc;
+        private MediaPlayer _mediaPlayer;
+        // Aggiungi un controllo VideoView (può essere fatto nel designer)
+        private LibVLCSharp.WinForms.VideoView videoView;
         Thread threadStop;
 
-        private MjpegDecoder mjpeg;
+        //private MjpegDecoder mjpeg;
 
-        private void mjpeg_FrameReady(object sender, FrameReadyEventArgs e)
+        /*private void mjpeg_FrameReady(object sender, FrameReadyEventArgs e)
         {
             Bitmap bmp;
             using (var ms = new MemoryStream(e.FrameBuffer))
@@ -57,14 +63,14 @@ namespace Tello
             drawFont.Dispose();
             drawBrush.Dispose();
             gr.Dispose();
-        }
+        }*/
 
-        private void mjpeg_Error(object sender, MjpegProcessor.ErrorEventArgs e)
+        /*private void mjpeg_Error(object sender, MjpegProcessor.ErrorEventArgs e)
         {
             MessageBox.Show(e.Message);
-        }
+        }*/
 
-        protected void StartMJPEGserverProcess()
+        /*protected void StartMJPEGserverProcess()
         {
             //Per drone
             //DRONE: -- ffmpeg -i udp://192.168.10.1:11111  -video_size 640x480 -vcodec mjpeg -rtbufsize 1000M -f mpjpeg -r 10 -q 3 -
@@ -85,17 +91,27 @@ namespace Tello
             };
 
             Process.Start(info);
-        }
+        }*/
         public Form1()
         {
             _tello = new TelloCmd();
-            InitializeComponent();
+
+            string vlcLibPath = @"D:\Documents\SITLAB\Tello\Tello\Tello\bin\Debug"; 
+            Core.Initialize(vlcLibPath);
+            _libVlc = new LibVLC();
+            _mediaPlayer = new MediaPlayer(_libVlc);
+
+            // Crea una nuova istanza di VideoView e aggiungila al Form
+            videoView = new LibVLCSharp.WinForms.VideoView();
+            videoView.Dock = DockStyle.Fill; // O imposta le dimensioni che desideri
+            Controls.Add(videoView);
         }
-        
-        private void Avvia_telecamera_Click(object sender, EventArgs e)
+
+        /*private void Avvia_telecamera_Click(object sender, EventArgs e)
         {
             if ((sender as Button).Text == "Avvia camera") // AVVIA
             {
+
                 _tello.ExecuteCommand("command");
                 _tello.StartVideoStreaming();
                 //StartMJPEGserverProcess(); // avvia lo streaming da ffmpeg
@@ -116,6 +132,43 @@ namespace Tello
                 mjpeg.FrameReady -= mjpeg_FrameReady;
                 mjpeg.Error -= mjpeg_Error;
                 mjpeg.StopStream();
+
+                (sender as Button).Text = "Avvia camera";
+            }
+        }*/
+
+        private void Avvia_telecamera_Click(object sender, EventArgs e)
+        {
+            if ((sender as Button).Text == "Avvia camera") // AVVIA
+            {
+                _tello.ExecuteCommand("command");
+                _tello.StartVideoStreaming();
+
+                // Configura VLC per visualizzare il flusso video
+                var media = new Media(_libVlc, "udp://@192.168.10.1:11111"); // Aggiungi l'indirizzo del flusso video UDP
+                _mediaPlayer = new MediaPlayer(media)
+                {
+                    EnableHardwareDecoding = true
+                };
+
+                // Associa il MediaPlayer al VideoView
+                videoView.MediaPlayer = _mediaPlayer;
+
+                // Avvia il flusso video
+                _mediaPlayer.Play();
+
+                // Cambia il testo del bottone
+                (sender as Button).Text = "STOP";
+            }
+            else // FERMA
+            {
+                _tello.StopVideoStreaming();
+
+                if (_mediaPlayer != null)
+                {
+                    _mediaPlayer.Stop();
+                    _mediaPlayer.Dispose();
+                }
 
                 (sender as Button).Text = "Avvia camera";
             }
