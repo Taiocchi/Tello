@@ -15,21 +15,22 @@ using System.Diagnostics;
 using System.IO;
 using LibVLCSharp.Shared;
 using LibVLCSharp.WinForms;
+using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 
 
 namespace Tello
 {
     public partial class Form1 : Form
     {
-
-        private tellocs.TelloCmd _tello;
-
+        Thread threadStop;
+        private TelloCmd _tello;
         private LibVLC _libVlc;
         private MediaPlayer _mediaPlayer;
-        // Aggiungi un controllo VideoView (può essere fatto nel designer)
-        private LibVLCSharp.WinForms.VideoView videoView;
-        Thread threadStop;
+        private Bitmap _videoBitmap;
+        private Process mediaMtxProcess;
 
+        // Variabile dichiarata fuori dal blocco
         //private MjpegDecoder mjpeg;
 
         /*private void mjpeg_FrameReady(object sender, FrameReadyEventArgs e)
@@ -92,20 +93,6 @@ namespace Tello
 
             Process.Start(info);
         }*/
-        public Form1()
-        {
-            _tello = new TelloCmd();
-
-            string vlcLibPath = @"D:\Documents\SITLAB\Tello\Tello\Tello\bin\Debug"; 
-            Core.Initialize(vlcLibPath);
-            _libVlc = new LibVLC();
-            _mediaPlayer = new MediaPlayer(_libVlc);
-
-            // Crea una nuova istanza di VideoView e aggiungila al Form
-            videoView = new LibVLCSharp.WinForms.VideoView();
-            videoView.Dock = DockStyle.Fill; // O imposta le dimensioni che desideri
-            Controls.Add(videoView);
-        }
 
         /*private void Avvia_telecamera_Click(object sender, EventArgs e)
         {
@@ -136,43 +123,134 @@ namespace Tello
                 (sender as Button).Text = "Avvia camera";
             }
         }*/
+        public Form1()
+        {
+            InitializeComponent();
+
+            _tello = new TelloCmd();
+
+            // Inizializza LibVLC
+            Core.Initialize();
+            _libVlc = new LibVLC();
+
+            // Inizializza MediaPlayer
+            _mediaPlayer = new MediaPlayer(_libVlc);
+
+            // Imposta il flusso RTSP con i parametri corretti
+            var media = new Media(_libVlc, "rtsp://192.168.10.1:554", FromType.FromLocation);
+            media.AddOption(":network-caching=300");
+            media.AddOption(":no-audio");
+            _mediaPlayer.Media = media;
+
+            // Collega i callback video
+            _mediaPlayer.SetVideoCallbacks(Lock, Unlock, Display);
+            _mediaPlayer.SetVideoFormat("RV32", (uint)pictureBox1.Width, (uint)pictureBox1.Height, (uint)(pictureBox1.Width * 4));
+
+            // Avvia lo streaming
+            _mediaPlayer.Play();
+        }
+
+        private IntPtr Lock(IntPtr opaque, IntPtr planes)
+        {
+            IntPtr[] buffers = new IntPtr[1];
+            // Alloca memoria per il buffer
+            buffers[0] = Marshal.AllocHGlobal(pictureBox1.Width * pictureBox1.Height * 4); // 4 byte per pixel RGBA
+            Marshal.Copy(buffers, 0, planes, buffers.Length);
+            return buffers[0];
+        }
+
+        private void Unlock(IntPtr opaque, IntPtr picture, IntPtr planes)
+        {
+            // Libera la memoria quando il frame è stato elaborato
+            Marshal.FreeHGlobal(picture);
+        }
+
+        private void Display(IntPtr opaque, IntPtr picture)
+        {
+            try
+            {
+                // Converte il frame in un'immagine Bitmap
+                _videoBitmap = new Bitmap(pictureBox1.Width, pictureBox1.Height, pictureBox1.Width * 4,
+                                            PixelFormat.Format32bppRgb, picture);
+
+                // Mostra l'immagine nella PictureBox
+                pictureBox1.Image = (Bitmap)_videoBitmap.Clone();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Errore nella visualizzazione del frame: {ex.Message}");
+            }
+        }
+
+
+        private void Form1_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            _mediaPlayer.Stop();
+            _mediaPlayer.Dispose();
+            _libVlc.Dispose();
+            _videoBitmap?.Dispose();
+        }
+
 
         private void Avvia_telecamera_Click(object sender, EventArgs e)
         {
             if ((sender as Button).Text == "Avvia camera") // AVVIA
             {
                 _tello.ExecuteCommand("command");
-                _tello.StartVideoStreaming();
+                //_tello.StartVideoStreaming();
 
-                // Configura VLC per visualizzare il flusso video
-                var media = new Media(_libVlc, "udp://@192.168.10.1:11111"); // Aggiungi l'indirizzo del flusso video UDP
-                _mediaPlayer = new MediaPlayer(media)
+                // Avvia MediaMTX se necessario
+                string mediaMtxExePath = Path.Combine(Application.StartupPath, "MediaMTX.exe");
+                if (File.Exists(mediaMtxExePath))
                 {
-                    EnableHardwareDecoding = true
-                };
+                    var startInfo = new ProcessStartInfo
+                    {
+                        FileName = mediaMtxExePath,
+                        Arguments = "",
+                        UseShellExecute = false,
+                        RedirectStandardOutput = true,
+                        CreateNoWindow = true
+                    };
+                    mediaMtxProcess = new Process { StartInfo = startInfo };
+                    mediaMtxProcess.Start();
+                }
+                else
+                {
+                    MessageBox.Show("MediaMTX non trovato!");
+                    return;
+                }
 
-                // Associa il MediaPlayer al VideoView
-                videoView.MediaPlayer = _mediaPlayer;
-
-                // Avvia il flusso video
+                // Configura il flusso video per il Tello
+                var media = new Media(_libVlc, "rtsp://192.168.10.1:554", FromType.FromLocation);
+                media.AddOption(":network-caching=300");
+                media.AddOption(":no-audio");
+                _mediaPlayer.Media = media;
                 _mediaPlayer.Play();
 
-                // Cambia il testo del bottone
+                // Cambia il testo del pulsante
                 (sender as Button).Text = "STOP";
             }
             else // FERMA
             {
-                _tello.StopVideoStreaming();
+                //_tello.StopVideoStreaming();
 
                 if (_mediaPlayer != null)
                 {
                     _mediaPlayer.Stop();
-                    _mediaPlayer.Dispose();
                 }
 
+                // Ferma il processo MediaMTX
+                if (mediaMtxProcess != null && !mediaMtxProcess.HasExited)
+                {
+                    mediaMtxProcess.Kill();
+                }
+
+                // Cambia il testo del pulsante
                 (sender as Button).Text = "Avvia camera";
             }
         }
+
+
 
         //Collegare tello
         private void button1_Click(object sender, EventArgs e)
@@ -274,6 +352,11 @@ namespace Tello
         private void button4_Click(object sender, EventArgs e)
         {
             MessageBox.Show(_tello.Speed.ToString() + " cm/s", "Speed");
+        }
+
+        private void pictureBox1_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
