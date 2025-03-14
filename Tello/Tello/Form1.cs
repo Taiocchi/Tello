@@ -23,6 +23,7 @@ namespace Tello
         private tellocs.TelloCmd _tello;
 
         Thread threadStop;
+        Thread threadTelecamera;
 
         private MjpegDecoder mjpeg;
 
@@ -102,32 +103,65 @@ namespace Tello
 
         private void Avvia_telecamera_Click(object sender, EventArgs e)
         {
-            if ((sender as Button).Text == "Avvia camera") // AVVIA
+            // Passiamo il riferimento al pulsante al thread
+            threadTelecamera = new Thread(new ParameterizedThreadStart(telecamera));
+            threadTelecamera.Start(sender);
+        }
+
+        private void telecamera(object param)
+        {
+            if (param is Button button)
             {
-                _tello.ExecuteCommand("command");
-                _tello.StartVideoStreaming();
-                //StartMJPEGserverProcess(); // avvia lo streaming da ffmpeg
-                mjpeg = new MjpegDecoder();
-                mjpeg.FrameReady += mjpeg_FrameReady;
-                mjpeg.Error += mjpeg_Error;
-                mjpeg.ParseStream(new Uri("http://127.0.0.1:9000")); // start stream
-                (sender as Button).Text = "STOP";
-                pictureBox1.Visible = true;
-            }
-            else // FERMA
+                if (button.InvokeRequired)
+                {
+                    button.Invoke(new Action(() => telecamera(button)));
+                    return;
+                }
 
-            {
-                pictureBox1.Visible = false;
-                pictureBox1.Image = null;
-                _tello.StopVideoStreaming();
+                if (button.Text == "Avvia camera") // AVVIA
+                {
+                    // Esegui i comandi di _tello nel thread UI
+                    this.Invoke(new Action(() =>
+                    {
+                        _tello.ExecuteCommand("command");
+                        _tello.StartVideoStreaming();
+                    }));
 
-                mjpeg.FrameReady -= mjpeg_FrameReady;
-                mjpeg.Error -= mjpeg_Error;
-                mjpeg.StopStream();
+                    // Inizializza MJPEG nel thread UI
+                    mjpeg = new MjpegDecoder();
+                    mjpeg.FrameReady += mjpeg_FrameReady;
+                    mjpeg.Error += mjpeg_Error;
+                    mjpeg.ParseStream(new Uri("http://127.0.0.1:9000")); // Start stream
 
-                (sender as Button).Text = "Avvia camera";
+                    pictureBox1.Invoke(new Action(() =>
+                    {
+                        pictureBox1.Visible = true;
+                        button.Text = "STOP";
+                    }));
+                }
+                else // FERMA
+                {
+                    // Esegui lo stop nel thread UI
+                    this.Invoke(new Action(() =>
+                    {
+                        _tello.StopVideoStreaming();
+                    }));
+
+                    mjpeg.FrameReady -= mjpeg_FrameReady;
+                    mjpeg.Error -= mjpeg_Error;
+                    mjpeg.StopStream();
+
+                    pictureBox1.Invoke(new Action(() =>
+                    {
+                        pictureBox1.Visible = false;
+                        pictureBox1.Image = null;
+                        button.Text = "Avvia camera";
+                    }));
+                }
             }
         }
+
+
 
         //Collegare tello
         private void button1_Click(object sender, EventArgs e)
