@@ -29,6 +29,7 @@ namespace Tello
         private MediaPlayer _mediaPlayer;
         private Bitmap _videoBitmap;
         private Process mediaMtxProcess;
+        private IntPtr _buffer;
 
         // Variabile dichiarata fuori dal blocco
         //private MjpegDecoder mjpeg;
@@ -123,133 +124,135 @@ namespace Tello
                 (sender as Button).Text = "Avvia camera";
             }
         }*/
-        public Form1()
+       public Form1()
         {
             InitializeComponent();
 
-            _tello = new TelloCmd();
-
-            // Inizializza LibVLC
-            Core.Initialize();
             _libVlc = new LibVLC();
-
-            // Inizializza MediaPlayer
             _mediaPlayer = new MediaPlayer(_libVlc);
 
-            // Imposta il flusso RTSP con i parametri corretti
-            var media = new Media(_libVlc, "rtsp://192.168.10.1:554", FromType.FromLocation);
-            media.AddOption(":network-caching=300");
+            // Configura il flusso video dalla webcam usando DirectShow
+            var media = new Media(_libVlc, "dshow://", FromType.FromLocation);
+            media.AddOption(":dshow-vdev=GENERAL WEBCAM");
+            media.AddOption(":dshow-size=640x480");
             media.AddOption(":no-audio");
+
+            // Assegna il media al player
             _mediaPlayer.Media = media;
 
-            // Collega i callback video
-            _mediaPlayer.SetVideoCallbacks(Lock, Unlock, Display);
+            // Avvia il flusso video
+            _mediaPlayer.SetVideoCallbacks(LockCallback, UnlockCallback, Display);
             _mediaPlayer.SetVideoFormat("RV32", (uint)pictureBox1.Width, (uint)pictureBox1.Height, (uint)(pictureBox1.Width * 4));
 
             // Avvia lo streaming
-            _mediaPlayer.Play();
+            bool success = _mediaPlayer.Play();
+            if (!success)
+            {
+                Console.WriteLine("Errore nell'avvio dello streaming dalla webcam!");
+            }
+            else
+            {
+                Console.WriteLine("Streaming dalla webcam avviato con successo.");
+            }
+        }
+        private IntPtr LockCallback(IntPtr opaque, IntPtr planes)
+        {
+            // Imposta il buffer di memoria da cui il video sarà estratto
+            // Puoi restituire IntPtr.Zero se non hai bisogno di una gestione avanzata del buffer
+            return IntPtr.Zero;
         }
 
-        private IntPtr Lock(IntPtr opaque, IntPtr planes)
+        // Callback per lo sblocco
+        private void UnlockCallback(IntPtr opaque, IntPtr picture, IntPtr planes)
         {
-            IntPtr[] buffers = new IntPtr[1];
-            // Alloca memoria per il buffer
-            buffers[0] = Marshal.AllocHGlobal(pictureBox1.Width * pictureBox1.Height * 4); // 4 byte per pixel RGBA
-            Marshal.Copy(buffers, 0, planes, buffers.Length);
-            return buffers[0];
-        }
-
-        private void Unlock(IntPtr opaque, IntPtr picture, IntPtr planes)
-        {
-            // Libera la memoria quando il frame è stato elaborato
-            Marshal.FreeHGlobal(picture);
+            // Non è necessario fare nulla qui, ma è necessario implementare questo metodo
+            // per "sbloccare" il buffer
+            // Puoi fare operazioni aggiuntive come liberare memoria o altre risorse, se necessario
+            Console.WriteLine("Unlock del buffer video");
         }
 
         private void Display(IntPtr opaque, IntPtr picture)
         {
             try
             {
-                // Converte il frame in un'immagine Bitmap
-                _videoBitmap = new Bitmap(pictureBox1.Width, pictureBox1.Height, pictureBox1.Width * 4,
-                                            PixelFormat.Format32bppRgb, picture);
+                // Assicurati che il frame non sia null
+                if (picture == IntPtr.Zero)
+                {
+                    Console.WriteLine("Errore: il flusso video è null.");
+                    return;
+                }
 
-                // Mostra l'immagine nella PictureBox
-                pictureBox1.Image = (Bitmap)_videoBitmap.Clone();
+                // Crea un oggetto Bitmap dal frame video
+                Bitmap videoBitmap = new Bitmap(pictureBox1.Width, pictureBox1.Height, pictureBox1.Width * 4,
+                                                PixelFormat.Format32bppRgb, picture);
+
+                // Visualizza l'immagine nella PictureBox
+                pictureBox1.Invoke((MethodInvoker)(() =>
+                {
+                    pictureBox1.Image?.Dispose();
+                    pictureBox1.Image = videoBitmap;
+                }));
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Errore nella visualizzazione del frame: {ex.Message}");
+                Console.WriteLine($"Errore durante la visualizzazione del frame: {ex.Message}");
             }
         }
 
 
         private void Form1_FormClosing(object sender, FormClosingEventArgs e)
         {
-            _mediaPlayer.Stop();
-            _mediaPlayer.Dispose();
-            _libVlc.Dispose();
+            // Ferma la riproduzione del video
+            if (_mediaPlayer != null)
+            {
+                _mediaPlayer.Stop();
+                _mediaPlayer.Dispose();
+            }
+
+            // Ferma e chiude LibVLC
+            if (_libVlc != null)
+            {
+                _libVlc.Dispose();
+            }
+
+            // Libera la memoria dell'immagine
             _videoBitmap?.Dispose();
         }
 
 
         private void Avvia_telecamera_Click(object sender, EventArgs e)
         {
-            if ((sender as Button).Text == "Avvia camera") // AVVIA
+            Button btn = sender as Button;
+            if (btn.Text == "Avvia camera") // AVVIA
             {
-                _tello.ExecuteCommand("command");
+                //_tello.ExecuteCommand("command");
                 //_tello.StartVideoStreaming();
-
-                // Avvia MediaMTX se necessario
-                string mediaMtxExePath = Path.Combine(Application.StartupPath, "MediaMTX.exe");
-                if (File.Exists(mediaMtxExePath))
-                {
-                    var startInfo = new ProcessStartInfo
-                    {
-                        FileName = mediaMtxExePath,
-                        Arguments = "",
-                        UseShellExecute = false,
-                        RedirectStandardOutput = true,
-                        CreateNoWindow = true
-                    };
-                    mediaMtxProcess = new Process { StartInfo = startInfo };
-                    mediaMtxProcess.Start();
-                }
-                else
-                {
-                    MessageBox.Show("MediaMTX non trovato!");
-                    return;
-                }
-
-                // Configura il flusso video per il Tello
-                var media = new Media(_libVlc, "rtsp://192.168.10.1:554", FromType.FromLocation);
-                media.AddOption(":network-caching=300");
+                // Configura il flusso video per la webcam
+                var media = new Media(_libVlc, "dshow://", FromType.FromLocation);
+                media.AddOption(":dshow-vdev=GENERAL WEBCAM");
+                media.AddOption(":dshow-size=640x480");
                 media.AddOption(":no-audio");
                 _mediaPlayer.Media = media;
-                _mediaPlayer.Play();
 
-                // Cambia il testo del pulsante
-                (sender as Button).Text = "STOP";
+                // Imposta i callback per il video
+                _mediaPlayer.SetVideoCallbacks(LockCallback, UnlockCallback, Display);
+
+                // Avvia lo streaming dalla webcam
+                bool success = _mediaPlayer.Play();
+                if (!success)
+                {
+                    MessageBox.Show("Errore nell'avvio dello streaming dalla webcam!");
+                }
+
+                btn.Text = "STOP";
             }
             else // FERMA
             {
                 //_tello.StopVideoStreaming();
-
-                if (_mediaPlayer != null)
-                {
-                    _mediaPlayer.Stop();
-                }
-
-                // Ferma il processo MediaMTX
-                if (mediaMtxProcess != null && !mediaMtxProcess.HasExited)
-                {
-                    mediaMtxProcess.Kill();
-                }
-
-                // Cambia il testo del pulsante
-                (sender as Button).Text = "Avvia camera";
+                _mediaPlayer.Stop();
+                btn.Text = "Avvia camera";
             }
         }
-
 
 
         //Collegare tello
