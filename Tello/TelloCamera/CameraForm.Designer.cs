@@ -40,15 +40,15 @@
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
             // 
-            // Form1
+            // CameraForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(784, 508);
             this.Controls.Add(this.pictureBox1);
-            this.Name = "Form1";
+            this.Name = "CameraForm";
             this.Text = "Form1";
-            
+            this.Load += new System.EventHandler(this.CameraForm_Load);
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
 

@@ -24,7 +24,7 @@ namespace Tello
 
         Thread threadStop;
         Thread threadTelecamera;
-        string cameraExePath = Path.Combine(Application.StartupPath, @"F:\MRA\Tello\Tello\TelloCamera\bin\Debug\TelloCamera.exe"); //Modificare in base al percorso del form Camera
+        string cameraExePath = @"..\..\..\TelloCamera\bin\Debug\TelloCamera.exe"; //Modificare in base al percorso del form Camera
 
         private MjpegDecoder mjpeg;
 
@@ -71,9 +71,6 @@ namespace Tello
                 Avvia_telecamera.Text = "Avvia camera";
             }
         }
-
-
-
 
 
         //Collegare tello
