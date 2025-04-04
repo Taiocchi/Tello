@@ -33,6 +33,7 @@ namespace Tello
         {
             _tello = new TelloCmd();
             InitializeComponent();
+            this.FormClosing += new FormClosingEventHandler(MainForm_FormClosing);
         }
         public struct movimento
         {
@@ -71,6 +72,23 @@ namespace Tello
                 Avvia_telecamera.Text = "Avvia camera";
             }
         }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (cameraProcess != null && !cameraProcess.HasExited)
+            {
+                try
+                {
+                    cameraProcess.Kill();
+                    cameraProcess.WaitForExit();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Errore durante la chiusura del processo: " + ex.Message);
+                }
+            }
+        }
+
 
 
         //Collegare tello
