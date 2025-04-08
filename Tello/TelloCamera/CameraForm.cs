@@ -6,7 +6,6 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Windows.Forms;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 using System.Diagnostics;
@@ -23,7 +22,13 @@ namespace TelloCamera
         private MjpegDecoder mjpeg;
         private bool isProcessingYOLO = false;
         int frameCountYolo;
- 
+        Timer timer = new Timer();
+        int Xmin;
+        int Xmax;
+        private bool timerStarted = false;
+        int[] array = new int[100];
+        int i = 0;
+
         public CameraForm()
         {
             InitializeComponent();
@@ -31,6 +36,13 @@ namespace TelloCamera
             mjpeg.FrameReady += mjpeg_FrameReadyYOLO;
             mjpeg.Error += mjpeg_Error;
             mjpeg.ParseStream(new Uri("http://127.0.0.1:9000"));
+            if (!timerStarted)
+            {
+                timer.Interval = 2000;
+                timer.Tick += new EventHandler(Distance);
+                timer.Start();
+                timerStarted = true;
+            }
         }
         private async void mjpeg_FrameReadyYOLO(object sender, FrameReadyEventArgs e)
         {
@@ -51,7 +63,10 @@ namespace TelloCamera
                     System.Drawing.Graphics gr = System.Drawing.Graphics.FromImage(newImg);
                     // Disegna FPS
                     System.Drawing.Font fpsFont = new System.Drawing.Font("Arial", 16);
-                    System.Drawing.SolidBrush fpsBrush = new System.Drawing.SolidBrush(System.Drawing.Color.Yellow);
+                    System.Drawing.SolidBrush fpsBrush = new System.Drawing.SolidBrush(System.Drawing.Color.Yellow);    
+                     
+                    Xmin = (int)detection.Xmin;
+                    Xmax = (int)detection.Xmax;
 
                     if (detection != default(DetectionResult))
                     {
@@ -100,6 +115,20 @@ namespace TelloCamera
                 //System.Windows.Forms.Application.Exit();
             }
         }
+
+        private void Distance(object sender, EventArgs e)
+        {    
+            int distanza = Xmax - Xmin;
+            i++;
+
+            array[i-1] = distanza;
+
+            if (i >= 2 && array[i - 2] >= array[i - 1])
+                label1.Text = "Si sta avvicinando!!";
+            else if(i >= 2 && array[i - 2] <= array[i - 1])
+                label1.Text = "Si sta allontanando!!";
+        }
+
 
         private static async Task<DetectionResult> RunDetect(byte[] frameB, Bitmap frameIn = null)
         {
