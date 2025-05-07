@@ -61,6 +61,7 @@
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.button5 = new System.Windows.Forms.Button();
             this.button7 = new System.Windows.Forms.Button();
+            this.Avvia_telecamera = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown_distance)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDownDegrees)).BeginInit();
             this.groupBox1.SuspendLayout();
@@ -456,11 +457,22 @@
             this.button7.UseVisualStyleBackColor = true;
             this.button7.Click += new System.EventHandler(this.button7_Click);
             // 
+            // Avvia_telecamera
+            // 
+            this.Avvia_telecamera.Location = new System.Drawing.Point(226, 605);
+            this.Avvia_telecamera.Name = "Avvia_telecamera";
+            this.Avvia_telecamera.Size = new System.Drawing.Size(75, 23);
+            this.Avvia_telecamera.TabIndex = 39;
+            this.Avvia_telecamera.Text = "button8";
+            this.Avvia_telecamera.UseVisualStyleBackColor = true;
+            this.Avvia_telecamera.Click += new System.EventHandler(this.Avvia_telecamera_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(961, 588);
+            this.ClientSize = new System.Drawing.Size(961, 663);
+            this.Controls.Add(this.Avvia_telecamera);
             this.Controls.Add(this.button7);
             this.Controls.Add(this.button6);
             this.Controls.Add(this.textBox1);
@@ -531,6 +543,7 @@
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Button button5;
         private System.Windows.Forms.Button button7;
+        private System.Windows.Forms.Button Avvia_telecamera;
     }
 }
 

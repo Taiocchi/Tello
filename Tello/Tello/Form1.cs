@@ -1,7 +1,16 @@
-﻿using System;
+﻿using MjpegProcessor;
+using demoTello.helpers;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using tellocs;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement.Button;
 using System.Diagnostics;
 using System.IO;
 
@@ -15,14 +24,17 @@ namespace Tello
 
         Thread threadStop;
         Thread threadTelecamera;
+        string cameraExePath = @"..\..\..\TelloCamera\bin\Debug\TelloCamera.exe"; //Modificare in base al percorso del form Camera
+
+        private MjpegDecoder mjpeg;
+
 
         public Form1()
         {
             _tello = new TelloCmd();
-            //string jsonString = JsonConvert.SerializeObject(_tello);
             InitializeComponent();
+            this.FormClosing += new FormClosingEventHandler(MainForm_FormClosing);
         }
-
         public struct movimento
         {
             public string move;
@@ -30,6 +42,54 @@ namespace Tello
         }
 
         movimento[] elemovimento = new movimento[100];
+
+
+        private Process cameraProcess;
+
+        private void Avvia_telecamera_Click(object sender, EventArgs e)
+        {
+            _tello.ExecuteCommand("command");
+            _tello.StartVideoStreaming();
+
+
+            if (cameraProcess == null || cameraProcess.HasExited)
+            {
+                if (File.Exists(cameraExePath))
+                {
+                    cameraProcess = Process.Start(cameraExePath);
+                    Avvia_telecamera.Text = "STOP";
+                }
+                else
+                {
+                    MessageBox.Show("Errore: CameraForm.exe non trovato!");
+                }
+            }
+            else
+            {
+                cameraProcess.CloseMainWindow();
+                cameraProcess.Dispose();
+                cameraProcess = null;
+                Avvia_telecamera.Text = "Avvia camera";
+            }
+        }
+
+        private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
+        {
+            if (cameraProcess != null && !cameraProcess.HasExited)
+            {
+                try
+                {
+                    cameraProcess.Kill();
+                    cameraProcess.WaitForExit();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Errore durante la chiusura del processo: " + ex.Message);
+                }
+            }
+        }
+
+
 
         //Collegare tello
         private void button1_Click(object sender, EventArgs e)
