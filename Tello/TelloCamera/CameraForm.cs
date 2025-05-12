@@ -25,11 +25,35 @@ namespace TelloCamera
         {
             InitializeComponent();
             mjpeg = new MjpegDecoder();
-            mjpeg.FrameReady += mjpeg_FrameReadyYOLO;
+            StartMJPEGserverProcess();
+            mjpeg.FrameReady += mjpeg_FrameReady;
             mjpeg.Error += mjpeg_Error;
             mjpeg.ParseStream(new Uri("http://127.0.0.1:9000"));
         }
-        private async void mjpeg_FrameReadyYOLO(object sender, FrameReadyEventArgs e)
+
+        protected void StartMJPEGserverProcess()
+        {
+            //Per drone
+            //DRONE: -- ffmpeg -i udp://192.168.10.1:11111  -video_size 640x480 -vcodec mjpeg -rtbufsize 1000M -f mpjpeg -r 10 -q 3 -
+
+            //WEBCAM: var camera = "Logi C310 HD WebCam";
+            //string arguments = $@"ffmpeg -f dshow -i video=""GENERAL WEBCAM"":audio=""Microfono (2 - GENERAL WEBCAM)"" -vcodec mjpeg -acodec aac -r 30 -s 640x480 -y output.mp4";
+
+            string arguments = $@"-- ffmpeg.exe -f dshow -i video=""GENERAL WEBCAM"" -vcodec mjpeg -acodec aac -r 30 -s 640x480 -y output.mp4";
+
+            ProcessStartInfo info = new ProcessStartInfo()
+            {
+                FileName = "MJPEGServer.exe",
+                Arguments = arguments,
+                UseShellExecute = true, // window
+                LoadUserProfile = true,
+                WindowStyle = ProcessWindowStyle.Hidden,
+                //RedirectStandardOutput = true,
+            };
+
+            Process.Start(info);
+        }
+        private async void mjpeg_FrameReady(object sender, FrameReadyEventArgs e)
         {
             try
             {
@@ -59,8 +83,9 @@ namespace TelloCamera
         {
             try
             {
+                //Task.Delay(300);
                 // URL per il servizio di object detection
-                string url = "https://tml.sitai2.duckdns.org/classify";
+                string url = "https://tm1.sitai2.duckdns.org/classify";
 
                 //https://powerful-man-distinctly.ngrok-free.app/v1/object-detection/yolo
                 //https://cv.sitai.duckdns.org/v1/object-detection/yolo
