@@ -9,10 +9,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.NETCore.Platforms" Version="1.0.1" />
+    <None Remove="ffmpeg.exe" />
+    <None Remove="MJPEGServer.exe" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="MjpegProcessor" Version="1.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="NLog" Version="5.3.4" />
+    <PackageReference Include="NLog" Version="5.4.0" />
   </ItemGroup>
 
 </Project>

@@ -24,7 +24,7 @@ namespace Tello
 
         Thread threadStop;
         Thread threadTelecamera;
-        string cameraExePath = @"..\..\..\TelloCamera\bin\Debug\TelloCamera.exe"; //Modificare in base al percorso del form Camera
+        string cameraExePath = @"..\..\..\TelloCamera\TelloCamera\bin\Debug\net8.0-windows\TelloCamera.exe"; //Modificare in base al percorso del form Camera
 
         private MjpegDecoder mjpeg;
 

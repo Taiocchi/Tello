@@ -14,6 +14,7 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using Newtonsoft;
 using Newtonsoft.Json;
+using System.Net.Http.Headers;
 
 namespace TelloCamera
 {
@@ -25,32 +26,30 @@ namespace TelloCamera
         {
             InitializeComponent();
             mjpeg = new MjpegDecoder();
-            mjpeg.FrameReady += mjpeg_FrameReadyYOLO;
+            mjpeg.FrameReady += mjpeg_FrameReady;
             mjpeg.Error += mjpeg_Error;
             mjpeg.ParseStream(new Uri("http://127.0.0.1:9000"));
         }
-        private async void mjpeg_FrameReadyYOLO(object sender, FrameReadyEventArgs e)
+        private async void mjpeg_FrameReady(object sender, FrameReadyEventArgs e)
         {
             try
             {
                 using (MemoryStream ms = new MemoryStream(e.FrameBuffer))
                 {
-                    string nome = await RunDetect(e.FrameBuffer, new Bitmap(ms));
-
-                    label1.Text = nome;
-
-                    System.Drawing.Bitmap newImg = new System.Drawing.Bitmap(ms);
-                    
-                    pictureBox1.Image = null;
-                    pictureBox1.Image = newImg;
+                    using (Bitmap bmp = new Bitmap(ms))
+                    {
+                        string nome = await RunDetect(e.FrameBuffer, bmp);
+                        label1.Text = nome;
+                        
+                        // Mostra immagine
+                        pictureBox1.Image?.Dispose(); // Libera risorsa precedente
+                        pictureBox1.Image = new Bitmap(bmp); // Copia il bitmap per sicurezza
+                    }
                 }
-
             }
             catch (Exception ex)
             {
-                //this.Text = ex.Message;
-                // esci dall'applicazione se c'è un errore
-                //System.Windows.Forms.Application.Exit();
+                MessageBox.Show("Errore: " + ex.Message);
             }
         }
 
@@ -60,7 +59,7 @@ namespace TelloCamera
             try
             {
                 // URL per il servizio di object detection
-                string url = "https://tml.sitai2.duckdns.org/classify";
+                string url = "https://tm1.sitai2.duckdns.org/classify";
 
                 //https://powerful-man-distinctly.ngrok-free.app/v1/object-detection/yolo
                 //https://cv.sitai.duckdns.org/v1/object-detection/yolo
@@ -71,6 +70,8 @@ namespace TelloCamera
                 PredictionResult detections = JsonConvert.DeserializeObject<PredictionResult>(responseText);
 
                 string class_name = detections.ClassName;
+
+                //await Task.Delay(1000); // Pausa per 1 secondo (100
 
                 return class_name;
 
@@ -92,10 +93,14 @@ namespace TelloCamera
                 using (MultipartFormDataContent content = new MultipartFormDataContent())
                 {
                     // Aggiungi l'immagine al contenuto della richiesta
-                    content.Add(new ByteArrayContent(imageBytes), "image", "image.jpg");
+                    var fileContent = new ByteArrayContent(imageBytes);
+                    fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("image/jpeg");
+                    content.Add(fileContent, "file", "image.jpg");
+                   
 
                     try
                     {
+                        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                         // Invia la richiesta POST
                         HttpResponseMessage response = await client.PostAsync(url, content);
 

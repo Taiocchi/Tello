@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35303.130
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TelloCamera", "TelloCamera\TelloCamera.csproj", "{ED808D27-BED6-4A80-92EB-67787EF27C04}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ED808D27-BED6-4A80-92EB-67787EF27C04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED808D27-BED6-4A80-92EB-67787EF27C04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED808D27-BED6-4A80-92EB-67787EF27C04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED808D27-BED6-4A80-92EB-67787EF27C04}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F15F06E5-D3CB-43BD-820D-C43E4C6E5451}
+	EndGlobalSection
+EndGlobal
