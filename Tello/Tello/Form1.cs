@@ -52,7 +52,7 @@ namespace Tello
             _tello.StartVideoStreaming();
 
 
-            if (cameraProcess == null || cameraProcess.HasExited)
+            /*if (cameraProcess == null || cameraProcess.HasExited)
             {
                 if (File.Exists(cameraExePath))
                 {
@@ -70,7 +70,7 @@ namespace Tello
                 cameraProcess.Dispose();
                 cameraProcess = null;
                 Avvia_telecamera.Text = "Avvia camera";
-            }
+            }*/
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)

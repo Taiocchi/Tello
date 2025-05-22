@@ -1,4 +1,4 @@
-﻿using MjpegProcessor;
+using MjpegProcessor;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,67 +14,51 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using Newtonsoft;
 using Newtonsoft.Json;
+using System.Net.Http.Headers;
+using System.Reflection.Emit;
 
 namespace TelloCamera
 {
     public partial class CameraForm : Form
     {
         private MjpegDecoder mjpeg;
+        private DateTime _lastDetectionTime = DateTime.MinValue;
 
         public CameraForm()
         {
             InitializeComponent();
             mjpeg = new MjpegDecoder();
-            StartMJPEGserverProcess();
             mjpeg.FrameReady += mjpeg_FrameReady;
             mjpeg.Error += mjpeg_Error;
             mjpeg.ParseStream(new Uri("http://127.0.0.1:9000"));
         }
 
-        protected void StartMJPEGserverProcess()
-        {
-            //Per drone
-            //DRONE: -- ffmpeg -i udp://192.168.10.1:11111  -video_size 640x480 -vcodec mjpeg -rtbufsize 1000M -f mpjpeg -r 10 -q 3 -
-
-            //WEBCAM: var camera = "Logi C310 HD WebCam";
-            //string arguments = $@"ffmpeg -f dshow -i video=""GENERAL WEBCAM"":audio=""Microfono (2 - GENERAL WEBCAM)"" -vcodec mjpeg -acodec aac -r 30 -s 640x480 -y output.mp4";
-
-            string arguments = $@"-- ffmpeg.exe -f dshow -i video=""GENERAL WEBCAM"" -vcodec mjpeg -acodec aac -r 30 -s 640x480 -y output.mp4";
-
-            ProcessStartInfo info = new ProcessStartInfo()
-            {
-                FileName = "MJPEGServer.exe",
-                Arguments = arguments,
-                UseShellExecute = true, // window
-                LoadUserProfile = true,
-                WindowStyle = ProcessWindowStyle.Hidden,
-                //RedirectStandardOutput = true,
-            };
-
-            Process.Start(info);
-        }
         private async void mjpeg_FrameReady(object sender, FrameReadyEventArgs e)
         {
             try
             {
                 using (MemoryStream ms = new MemoryStream(e.FrameBuffer))
                 {
-                    string nome = await RunDetect(e.FrameBuffer, new Bitmap(ms));
+                    using (Bitmap bmp = new Bitmap(ms))
+                    {
+                        // Analizza solo se sono passati almeno 333ms
+                        if ((DateTime.Now - _lastDetectionTime).TotalMilliseconds >= 999)
+                        {
+                            _lastDetectionTime = DateTime.Now;
 
-                    label1.Text = nome;
+                            string nome = await RunDetect(e.FrameBuffer, bmp);
+                            if (nome != null)
+                                label1.Text = nome;
+                        }
 
-                    System.Drawing.Bitmap newImg = new System.Drawing.Bitmap(ms);
-
-                    pictureBox1.Image = null;
-                    pictureBox1.Image = newImg;
+                        System.Drawing.Bitmap newImg = new System.Drawing.Bitmap(ms);
+                        pictureBox1.Image = newImg;
+                    }
                 }
-
             }
             catch (Exception ex)
             {
-                //this.Text = ex.Message;
-                // esci dall'applicazione se c'è un errore
-                //System.Windows.Forms.Application.Exit();
+                MessageBox.Show("Errore: " + ex.Message);
             }
         }
 
@@ -83,7 +67,6 @@ namespace TelloCamera
         {
             try
             {
-                //Task.Delay(300);
                 // URL per il servizio di object detection
                 string url = "https://tm1.sitai2.duckdns.org/classify";
 
@@ -96,6 +79,8 @@ namespace TelloCamera
                 PredictionResult detections = JsonConvert.DeserializeObject<PredictionResult>(responseText);
 
                 string class_name = detections.ClassName;
+
+                //await Task.Delay(1000); // Pausa per 1 secondo (100
 
                 return class_name;
 
@@ -112,15 +97,19 @@ namespace TelloCamera
         {
             using (HttpClient client = new HttpClient())
             {
-                client.Timeout = TimeSpan.FromMinutes(2); // Timeout più lungo
+                client.Timeout = TimeSpan.FromMinutes(2); // Timeout pi� lungo
 
                 using (MultipartFormDataContent content = new MultipartFormDataContent())
                 {
                     // Aggiungi l'immagine al contenuto della richiesta
-                    content.Add(new ByteArrayContent(imageBytes), "image", "image.jpg");
+                    var fileContent = new ByteArrayContent(imageBytes);
+                    fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse("image/jpeg");
+                    content.Add(fileContent, "file", "image.jpg");
+
 
                     try
                     {
+                        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                         // Invia la richiesta POST
                         HttpResponseMessage response = await client.PostAsync(url, content);
 
