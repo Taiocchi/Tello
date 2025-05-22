@@ -21,6 +21,7 @@ namespace TelloCamera
     public partial class CameraForm : Form
     {
         private MjpegDecoder mjpeg;
+        private DateTime _lastDetectionTime = DateTime.MinValue;
 
         public CameraForm()
         {
@@ -30,6 +31,7 @@ namespace TelloCamera
             mjpeg.Error += mjpeg_Error;
             mjpeg.ParseStream(new Uri("http://127.0.0.1:9000"));
         }
+
         private async void mjpeg_FrameReady(object sender, FrameReadyEventArgs e)
         {
             try
@@ -38,12 +40,18 @@ namespace TelloCamera
                 {
                     using (Bitmap bmp = new Bitmap(ms))
                     {
-                        string nome = await RunDetect(e.FrameBuffer, bmp);
-                        label1.Text = nome;
-                        
-                        // Mostra immagine
-                        pictureBox1.Image?.Dispose(); // Libera risorsa precedente
-                        pictureBox1.Image = new Bitmap(bmp); // Copia il bitmap per sicurezza
+                        // Analizza solo se sono passati almeno 333ms
+                        if ((DateTime.Now - _lastDetectionTime).TotalMilliseconds >= 999)
+                        {
+                            _lastDetectionTime = DateTime.Now;
+
+                            string nome = await RunDetect(e.FrameBuffer, bmp);
+                            if (nome != null)
+                                label1.Text = nome;
+                        }
+
+                        System.Drawing.Bitmap newImg = new System.Drawing.Bitmap(ms);
+                        pictureBox1.Image = newImg;
                     }
                 }
             }
