@@ -68,7 +68,7 @@ namespace TelloCamera
             try
             {
                 // URL per il servizio di object detection
-                string url = "https://tm1.sitai2.duckdns.org/classify";
+                string url = "http://localhost:5001/classify";
 
                 //https://powerful-man-distinctly.ngrok-free.app/v1/object-detection/yolo
                 //https://cv.sitai.duckdns.org/v1/object-detection/yolo
@@ -78,7 +78,7 @@ namespace TelloCamera
 
                 PredictionResult detections = JsonConvert.DeserializeObject<PredictionResult>(responseText);
 
-                string class_name = detections.ClassName;
+                string class_name = detections.Label;
 
                 //await Task.Delay(1000); // Pausa per 1 secondo (100
 
@@ -129,17 +129,11 @@ namespace TelloCamera
         }
         public class PredictionResult
         {
-            [JsonProperty("class_index")]
-            public int ClassIndex { get; set; }
+            [JsonProperty("label")]
+            public string Label { get; set; }
 
-            [JsonProperty("class_name")]
-            public string ClassName { get; set; }
-
-            [JsonProperty("class_confidence")]
-            public double ClassConfidence { get; set; }
-
-            [JsonProperty("predictions")]
-            public List<double> Predictions { get; set; }
+            [JsonProperty("confidence")]
+            public double Confidence { get; set; }
         }
 
         private void mjpeg_Error(object sender, MjpegProcessor.ErrorEventArgs e)
