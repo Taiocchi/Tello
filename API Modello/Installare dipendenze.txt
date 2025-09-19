@@ -1,0 +1,18 @@
+richiesta: curl -X POST http://localhost:5001/classify -H "Content-Type: multipart/form-data" -F "file=@"nome immagine".jpg"
+
+INSTALLARE PYTHON: https://www.python.org/
+
+---------------------------------------------------------------------
+
+python -m venv venv
+.\venv\Scripts\activate   # Su Windows
+
+pip install tensorflow tf2onnx numpy==1.26.4 matplotlib
+
+---------------------------------------------------------------------
+
+python -m tf2onnx.convert --saved-model model_tf/ --output model.onnx
+
+---------------------------------------------------------------------
+
+Attivare ambiente virtuale: venv\Scripts\activate
