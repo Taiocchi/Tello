@@ -1,4 +1,5 @@
 # Tello AI
+⚠️ I prerequisiti scritti di seguito sono fondamentali per il corretto funzionamento. Si prega di porre attenzione
 **Tello AI** è il software che ti permette di controllare un drone DJI Tello direttamente dal tuo portatile.  
  Ma non finisce qui: grazie all’integrazione con modelli di intelligenza artificiale, le possibilità diventano praticamente infinite e si adattano alle tue esigenze.
 
