@@ -54,7 +54,6 @@
             this.buttonFlip = new System.Windows.Forms.Button();
             this.groupBox5 = new System.Windows.Forms.GroupBox();
             this.buttonBattery = new System.Windows.Forms.Button();
-            this.button4 = new System.Windows.Forms.Button();
             this.pictureBox2 = new System.Windows.Forms.PictureBox();
             this.groupBox6 = new System.Windows.Forms.GroupBox();
             this.button6 = new System.Windows.Forms.Button();
@@ -386,18 +385,6 @@
             this.buttonBattery.UseVisualStyleBackColor = true;
             this.buttonBattery.Click += new System.EventHandler(this.buttonBattery_Click);
             // 
-            // button4
-            // 
-            this.button4.Location = new System.Drawing.Point(279, 12);
-            this.button4.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(122, 27);
-            this.button4.TabIndex = 26;
-            this.button4.Text = "VEDI VELOCITA\'";
-            this.button4.UseVisualStyleBackColor = true;
-            this.button4.Visible = false;
-            this.button4.Click += new System.EventHandler(this.button4_Click);
-            // 
             // pictureBox2
             // 
             this.pictureBox2.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox2.Image")));
@@ -459,11 +446,11 @@
             // 
             // Avvia_telecamera
             // 
-            this.Avvia_telecamera.Location = new System.Drawing.Point(226, 605);
+            this.Avvia_telecamera.Location = new System.Drawing.Point(181, 571);
             this.Avvia_telecamera.Name = "Avvia_telecamera";
-            this.Avvia_telecamera.Size = new System.Drawing.Size(75, 23);
+            this.Avvia_telecamera.Size = new System.Drawing.Size(191, 55);
             this.Avvia_telecamera.TabIndex = 39;
-            this.Avvia_telecamera.Text = "button8";
+            this.Avvia_telecamera.Text = "Avvia Camera";
             this.Avvia_telecamera.UseVisualStyleBackColor = true;
             this.Avvia_telecamera.Click += new System.EventHandler(this.Avvia_telecamera_Click);
             // 
@@ -479,7 +466,6 @@
             this.Controls.Add(this.button5);
             this.Controls.Add(this.groupBox6);
             this.Controls.Add(this.groupBox4);
-            this.Controls.Add(this.button4);
             this.Controls.Add(this.groupBox5);
             this.Controls.Add(this.groupBox3);
             this.Controls.Add(this.groupBox2);
@@ -536,7 +522,6 @@
         private System.Windows.Forms.Button buttonFlip;
         private System.Windows.Forms.GroupBox groupBox5;
         private System.Windows.Forms.Button buttonBattery;
-        private System.Windows.Forms.Button button4;
         private System.Windows.Forms.PictureBox pictureBox2;
         private System.Windows.Forms.GroupBox groupBox6;
         private System.Windows.Forms.Button button6;

@@ -52,7 +52,7 @@ namespace Tello
             _tello.StartVideoStreaming();
 
 
-            /*if (cameraProcess == null || cameraProcess.HasExited)
+            if (cameraProcess == null || cameraProcess.HasExited)
             {
                 if (File.Exists(cameraExePath))
                 {
@@ -70,7 +70,7 @@ namespace Tello
                 cameraProcess.Dispose();
                 cameraProcess = null;
                 Avvia_telecamera.Text = "Avvia camera";
-            }*/
+            }
         }
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
@@ -188,15 +188,6 @@ namespace Tello
             MessageBox.Show(_tello.Battery.ToString() + " %", "Battery");
         }
 
-        private void button4_Click(object sender, EventArgs e)
-        {
-            MessageBox.Show(_tello.Speed.ToString() + " cm/s", "Speed");
-        }
-
-
-
-
-
         private void button5_Click_1(object sender, EventArgs e)
         {
             bool visual = default;
@@ -304,9 +295,6 @@ namespace Tello
 
         private void button7_Click(object sender, EventArgs e)
         {
-
-
-
             // Avvia l'applicazione Blocco Note (Notepad)
             Process.Start("notepad.exe");
 
