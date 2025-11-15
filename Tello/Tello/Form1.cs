@@ -24,7 +24,7 @@ namespace Tello
 
         Thread threadStop;
         Thread threadTelecamera;
-        string cameraExePath = @"..\..\..\TelloCamera\TelloCamera\bin\Debug\net8.0-windows\TelloCamera.exe"; //Modificare in base al percorso del form Camera
+        string cameraExePath = @"..\..\..\TelloCamera\bin\Debug\net8.0-windows\TelloCamera.exe"; //Modificare in base al percorso del form Camera
 
         private MjpegDecoder mjpeg;
 
@@ -75,19 +75,33 @@ namespace Tello
 
         private void MainForm_FormClosing(object sender, FormClosingEventArgs e)
         {
-            if (cameraProcess != null && !cameraProcess.HasExited)
+            try
             {
-                try
+                // Ferma cameraProcess
+                if (cameraProcess != null && !cameraProcess.HasExited)
                 {
                     cameraProcess.Kill();
                     cameraProcess.WaitForExit();
                 }
-                catch (Exception ex)
+
+                // Ferma MJPEGServer avviato dalla libreria
+                var processes = Process.GetProcessesByName("mjpegserver");
+
+                foreach (var p in processes)
                 {
-                    MessageBox.Show("Errore durante la chiusura del processo: " + ex.Message);
+                    if (!p.HasExited)
+                    {
+                        p.Kill();
+                        p.WaitForExit();
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Errore durante la chiusura del processo: " + ex.Message);
+            }
         }
+
 
 
 

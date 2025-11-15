@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -692,28 +693,50 @@ namespace tellocs
         {
             StartMJPEGserverProcess($"{options} {output}");
         }
-
         protected void StartMJPEGserverProcess(string outputArguments)
         {
-            string arguments = $@"-- ffmpeg -i udp://192.168.10.2:{_videoUdpPort} {outputArguments} -video_size 640x480 -framerate 10 -vcodec mjpeg -threads 6 -rtbufsize 1000M -f mpjpeg -r 15 -b:v 400k -b:a 100k. -q 2 -";
+            string arguments =
+                $"ffmpeg -i udp://192.168.10.2:{_videoUdpPort} {outputArguments} " +
+                "-video_size 640x480 -framerate 10 -vcodec mjpeg -threads 6 " +
+                "-rtbufsize 1000M -f mpjpeg -r 15 -b:v 400k -b:a 100k -q 2 -";
+
             ProcessStartInfo info = new ProcessStartInfo()
             {
                 FileName = MJPEGserverPath,
                 Arguments = arguments,
-                UseShellExecute = true,
-                //LoadUserProfile = true,
-                WindowStyle = ProcessWindowStyle.Hidden
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true,
+                WorkingDirectory = Path.GetDirectoryName(MJPEGserverPath)
             };
-            if (DebugMode)
+
+            _log.Debug($"[StartMJPEGserverProcess] Starting: {info.FileName} {info.Arguments}");
+
+            _MJPEGserverProcess = new Process();
+            _MJPEGserverProcess.StartInfo = info;
+
+            // 🔹 Leggi l'output in tempo reale senza bloccare
+            _MJPEGserverProcess.OutputDataReceived += (s, e) =>
             {
-                info.UseShellExecute = false;
-                info.RedirectStandardOutput = true;
-                //info.WindowStyle = ProcessWindowStyle.Normal;
-            }
-            _log.Debug($"Starting: MJPEGserver {arguments}");
-            _MJPEGserverProcess = Process.Start(info);
-            //_MJPEGserverProcess.WaitForExit();
+                if (!string.IsNullOrEmpty(e.Data))
+                    _log.Debug($"MJPEGServer STDOUT: {e.Data}");
+            };
+
+            _MJPEGserverProcess.ErrorDataReceived += (s, e) =>
+            {
+                if (!string.IsNullOrEmpty(e.Data))
+                    _log.Error($"MJPEGServer STDERR: {e.Data}");
+            };
+
+            _MJPEGserverProcess.Start();
+
+            _MJPEGserverProcess.BeginOutputReadLine();
+            _MJPEGserverProcess.BeginErrorReadLine();
         }
+
+
+
 
         protected string _telloIpAddress;
         protected int _messageUdpPort = TelloMessageUdpPort;    // the out-going message port for command and query
