@@ -284,6 +284,7 @@ namespace TelloCamera
             return null;
         }
 
+        //Static per usare il metodo senza creare l'oggetto ma chiamandolo sulla classe
         public static async Task<string> SendImageForDetection(string url, byte[] imageBytes)
         {
             using (HttpClient client = new HttpClient())
